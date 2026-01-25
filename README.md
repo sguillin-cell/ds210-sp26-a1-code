@@ -24,3 +24,5 @@ Each code example or logical unit is structured as a standalone Rust project.
 You can open that project in VSCode to view or run its individual parts.
 
 Further instructions may be provided in README files attached to the code example, as appropriate.
+
+For an example, check out [lecture_2_why_rust/1_rust_vs_python.md](lecture_2_why_rust/1_rust_vs_python.md).
