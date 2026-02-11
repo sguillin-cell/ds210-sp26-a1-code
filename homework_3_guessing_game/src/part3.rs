@@ -16,9 +16,17 @@ impl PlayerTrait for SimulatedPlayer {
      * The function should return true if the guess and number are equal.
      * The function should return false otherwise.
      */
+
     fn ask_if_equal(&mut self, guess: u32) -> bool {
-        todo!("you did not provide your part 3 solution yet!")
-    }
+        let is_equal = self.the_number == guess;
+        if is_equal {
+            return true;
+        }
+        else{
+            return false
+        }
+        }
+    
     /**
      * This function compares the guess to the number that the player has in mind.
      * The function should return one of these three cases:
@@ -27,9 +35,17 @@ impl PlayerTrait for SimulatedPlayer {
      * 1 if the number > guess
      */
     fn ask_to_compare(&mut self, guess: u32) -> i32 {
-        todo!("you did not provide your part 3 solution yet!")
+        if self.the_number == guess {
+            return 0;
+        }
+        else if self.the_number < guess {
+            return -1;
+        }
+        else {
+            return 1;
+        }
     }
-}
+}   
 
 
 
