@@ -7,6 +7,12 @@ pub struct Part1 {}
 impl Strategy for Part1 {
     fn guess_the_number(player: &mut Player, min: u32, max: u32) -> u32 {
         // YOUR SOLUTION GOES HERE.
-        todo!("No solution provided yet")
+        for number in min..=max {
+        let guess = number;
+        if player.ask_if_equal(guess) {
+            return guess;
+            }
+        }
+        min
     }
 }
