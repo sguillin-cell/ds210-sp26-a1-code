@@ -130,15 +130,15 @@ mod bad_strategy_tests {
     }
 
     #[test]
+    #[should_panic]
     fn a_different_number() {
         let min = 0;
         let max = 100;
-        let number = todo!("`the_min` and `the_max` are not enough: the `BadStrategy` satisfies them, even though it is wrong. Add your own test that demonstrate that BadStrategy does not work!");
-
-        // We create a simulated player
+        let number = 7;
         let mut player = Player::new(SimulatedPlayer::new(number));
         let answer = BadStrategy::guess_the_number(&mut player, min, max);
         assert_eq!(answer, number);
+        assert_eq!(player.steps(), 1);
     }
 }
 
@@ -158,16 +158,39 @@ mod part2_tests {
     // Look at part1_tests for inspiration.
     #[test]
     fn the_min() {
-        todo!("add your tests for part2");
+        let min = 10;
+        let max = 40;
+        let number = min;
+
+        // We create a simulated player
+        let mut player = Player::new(SimulatedPlayer::new(number));
+        let answer = Part2::guess_the_number(&mut player, min, max);
+        assert_eq!(answer, number);
+        assert!(player.steps() <= max);
     }
 
     #[test]
     fn the_max() {
-        todo!("add your tests for part2");
+        let min = 0;
+        let max = 40;
+        let number = max - 1;
+
+        // We create a simulated player
+        let mut player = Player::new(SimulatedPlayer::new(number));
+        let answer = Part2::guess_the_number(&mut player, min, max);
+        assert_eq!(answer, number);
+        assert!(player.steps() <= max);
+
     }
 
     #[test]
     fn a_different_number() {
-        todo!("Add your tests for part2!");
+       let min = 0;
+        let max = 40;
+        let number = 7;
+        let mut player = Player::new(SimulatedPlayer::new(number));
+        let answer = Part2::guess_the_number(&mut player, min, max);
+        assert_eq!(answer, number);
+        assert!(player.steps() <= max);
     }
 }
