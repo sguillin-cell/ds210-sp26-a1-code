@@ -20,7 +20,7 @@ impl ChatbotV1 {
         let response = chat_session.add_message(message).await;
 
         match response {
-            Ok(reply) => reply.to_string(),
+            Ok(reply) => reply,
             Err(_) => "Failed to respond, sorry!".to_string(),  
         }
     }
