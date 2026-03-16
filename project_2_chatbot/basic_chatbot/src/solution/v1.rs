@@ -16,6 +16,13 @@ impl ChatbotV1 {
         let mut chat_session: Chat<Llama> = self.model
             .chat()
             .with_system_prompt("The assistant will act like a pirate");
+<<<<<<< s1basic
+        let response = chat_session.add_message(message).await;
+        match response {
+        Ok(value) => value,
+        Err(_) => String::from("Error"),
+    }
+=======
 
         let response = chat_session.add_message(message).await;
 
@@ -23,5 +30,6 @@ impl ChatbotV1 {
             Ok(reply) => reply.to_string(),
             Err(_) => "Failed to respond, sorry!".to_string(),  
         }
+>>>>>>> s2basic
     }
 }
