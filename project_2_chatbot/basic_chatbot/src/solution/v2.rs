@@ -30,4 +30,4 @@ impl ChatbotV2 {
             Err(_) => "Failed to respond, sorry!".to_string(), 
         }
     }
-}
+} 
