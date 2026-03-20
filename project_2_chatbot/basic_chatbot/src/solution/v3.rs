@@ -2,9 +2,9 @@ use kalosm::language::*;
 use std::collections::HashMap;
 
 #[allow(dead_code)]
-pub struct ChatbotV3 {
-    model: Llama,
-    sessions: HashMap<String, Chat<Llama>>,
+    pub struct ChatbotV3 {
+        model: Llama,
+        sessions: HashMap<String, Chat<Llama>>,
 }
 
 impl ChatbotV3 {
