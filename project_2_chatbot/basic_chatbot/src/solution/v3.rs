@@ -2,29 +2,40 @@ use kalosm::language::*;
 use std::collections::HashMap;
 
 #[allow(dead_code)]
-pub struct ChatbotV3 {
-    model: Llama,
-    sessions: HashMap<String, Chat<Llama>>,
+    pub struct ChatbotV3 {
+        model: Llama,
+        sessions: HashMap<String, Chat<Llama>>,
 }
 
 impl ChatbotV3 {
     #[allow(dead_code)]
     pub fn new(model: Llama) -> ChatbotV3 {
-        return ChatbotV3 {
+        ChatbotV3 {
             model,
             sessions: HashMap::new(),
-        };
+        }
     }
 
     #[allow(dead_code)]
     pub async fn chat_with_user(&mut self, username: String, message: String) -> String {
-        // Add your code for chatting with the agent while keeping conversation history here.
-        // Notice, you are given both the `message` and also the `username`.
-        // Use this information to select the correct chat session for that user and keep it
-        // separated from the sessions of other users.
-        return String::from("Hello, I am not a bot (yet)!");
-    }
 
+        if !self.sessions.contains_key(&username) {
+            let chat = self.model
+                .chat()
+                .with_system_prompt("The assistant will act like a pirate");
+
+            self.sessions.insert(username.clone(), chat);
+        }
+        let session = match self.sessions.get_mut(&username) {
+            Some(session) => session,
+            None => panic!("Session not found"),
+        };
+        let response = session.add_message(message).await;
+        match response {
+            Ok(reply) => reply,
+            Err(_) => "Failed to respond, sorry!".to_string(),
+        }
+    }
     #[allow(dead_code)]
     pub fn get_history(&self, username: String) -> Vec<String> {
         

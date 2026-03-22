@@ -1,5 +1,5 @@
 use kalosm::language::*;
-use crate::solution::file_library;
+use crate::solution::file_library::{self, load_chat_session_from_file};
 
 pub struct ChatbotV4 {
     model: Llama,
@@ -18,15 +18,23 @@ impl ChatbotV4 {
         let mut chat_session: Chat<Llama> = self.model
             .chat()
             .with_system_prompt("The assistant will act like a pirate");
+        let file = load_chat_session_from_file(&filename);
 
-        // TODO: You have to implement the rest:
-        // You need to load the chat session from the file using file_library::load_chat_session_from_file(...).
-        // Think about what needs to happen if the function returns None vs Some(session).
-        // Hint: look at https://docs.rs/kalosm/latest/kalosm/language/struct.Chat.html#method.with_session
-
-        return String::from("Hello, I am not a bot (yet)!");
+    match file {
+        Some(session) => {
+            chat_session = chat_session.with_session(session);
+        }
+            None => {
+            panic!("There is no file with a session");
+        }
     }
-
+        let response = chat_session.add_message(message).await;
+        match response {
+            Ok(reply) => reply,
+            Err(_) => "Failed to respond, sorry!".to_string(),
+        }
+    }
+    
     pub fn get_history(&self, username: String) -> Vec<String> {
         let filename = &format!("{}.txt", username);
 
