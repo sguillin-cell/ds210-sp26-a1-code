@@ -1,5 +1,5 @@
 use kalosm::language::*;
-use crate::solution::file_library::{self, load_chat_session_from_file,};
+use crate::solution::file_library::{self, load_chat_session_from_file,save_chat_session_to_file};
 
 pub struct ChatbotV4 {
     model: Llama,
@@ -29,7 +29,10 @@ impl ChatbotV4 {
     } 
         let response = chat_session.add_message(message).await;
         match response {
-            Ok(reply) =>  {
+            Ok(reply) => {
+                if let Ok(session) = chat_session.session() {
+                    save_chat_session_to_file(filename, &session);
+                }
                 reply
             }
             Err(_) => "Failed to respond, sorry!".to_string(),
@@ -44,8 +47,12 @@ impl ChatbotV4 {
                 return Vec::new();
             },
             Some(session) => {
-                // TODO: what should happen here?
-                return Vec::new();
+                let history = session.history();
+                let mut result = Vec::new();
+                for msg in history.iter().skip(1) {
+                    result.push(msg.content().to_string());
+                }
+                return result;
             }
         }
     }
