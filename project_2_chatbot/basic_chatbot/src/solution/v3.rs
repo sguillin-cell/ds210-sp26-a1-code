@@ -35,7 +35,7 @@ impl ChatbotV3 {
                     Ok(session) => {
                         let history = session.history();
                         let mut result: Vec<String> = Vec::new();
-                        for msg in history.iter() {
+                        for msg in history.iter().skip(1) {
                             result.push(msg.content().to_string());
                         }
                         return result;
