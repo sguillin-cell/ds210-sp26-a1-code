@@ -38,7 +38,7 @@ impl ChatbotV5 {
                 }
             }
             Some(chat_session) => {
-                println!("chat_with_user: {username} is in the cache! Nice!");
+                println!("chat_with_user: {username} is in the cache!");
                 chat_session.clone()
             }
         };
@@ -55,32 +55,46 @@ impl ChatbotV5 {
         }
     }
 
-    pub fn get_history(&mut self, username: String) -> Vec<String> {
-        let filename = &format!("{}.txt", username);
-        let cached_chat = self.cache.get_chat(&username);
+pub fn get_history(&mut self, username: String) -> Vec<String> {
+    let filename = format!("{}.txt", username);
 
-        match cached_chat {
-            None => {
-                println!("get_history: {username} is not in the cache!");
-                match file_library::load_chat_session_from_file(filename) {
-                    None => return Vec::new(),
-                    Some(session) => messages_from_session(&session),
-                }
-            }
-            Some(chat_session) => {
-                println!("get_history: {username} is in the cache! Nice!");
-                match chat_session.session() {
-                    Ok(session) => {
-                        let history = session.history();
-                        let mut result = Vec::new();
-                        for msg in history.iter().skip(1) {
-                            result.push(msg.content().to_string());
-                        }
-                        result
+    let cached_chat = self.cache.get_chat(&username);
+
+    match cached_chat {
+        None => {
+            println!("get_history: {username} NOT in cache");
+
+            match file_library::load_chat_session_from_file(&filename) {
+                None => Vec::new(),
+                Some(session) => {
+                    let history = session.history();
+                    let mut result = Vec::new();
+
+                    for msg in history.iter().skip(1) {
+                        result.push(msg.content().to_string());
                     }
-                    Err(_) => Vec::new(),
+
+                    result
                 }
             }
         }
+        Some(chat_session) => {
+            println!("get_history: {username} FOUND in cache");
+
+            match chat_session.session() {
+                Ok(session) => {
+                    let history = session.history();
+                    let mut result = Vec::new();
+
+                    for msg in history.iter().skip(1) {
+                        result.push(msg.content().to_string());
+                    }
+
+                    result
+                }
+                Err(_) => Vec::new(),
+            }
+        }
     }
+}
 }
