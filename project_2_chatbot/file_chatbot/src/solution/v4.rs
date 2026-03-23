@@ -1,5 +1,5 @@
 use kalosm::language::*;
-use crate::solution::file_library::{self, load_chat_session_from_file};
+use crate::solution::file_library::{self, load_chat_session_from_file,save_chat_session_to_file};
 
 pub struct ChatbotV4 {
     model: Llama,
@@ -25,12 +25,16 @@ impl ChatbotV4 {
             chat_session = chat_session.with_session(session);
         }
             None => {
-            panic!("There is no file with a session");
         }
-    }
+    } 
         let response = chat_session.add_message(message).await;
         match response {
-            Ok(reply) => reply,
+            Ok(reply) => {
+                if let Ok(session) = chat_session.session() {
+                    save_chat_session_to_file(filename, &session);
+                }
+                reply
+            }
             Err(_) => "Failed to respond, sorry!".to_string(),
         }
     }
