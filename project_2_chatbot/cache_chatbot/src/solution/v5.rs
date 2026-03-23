@@ -38,14 +38,16 @@ impl ChatbotV5 {
                 }
             }
             Some(chat_session) => {
-                println!("chat_with_user: {username} is in the cache! Nice!")
+                println!("chat_with_user: {username} is in the cache! Nice!");
                 chat_session.clone()
             }
         };
 
         let response = chat.add_message(message).await;
-        let session = chat.session().unwrap();
-        file_library::save_chat_session_to_file(&filename, &session);
+        {
+            let session = chat.session().unwrap();
+            file_library::save_chat_session_to_file(&filename, &session);
+        }
         self.cache.insert_chat(username.clone(), chat);
         match response {
             Ok(reply) => reply.to_string(),
