@@ -32,18 +32,13 @@ impl<V> Cache<V> {
 
     // Helper functions.
     fn remove_least_recently_used(&mut self) {
-        println!("Removing least recently used");
-        let value = self.hashmap.remove(key);
-        let mut i = 0;
-        while i < self.usage_history.len() {
-            if self.usage_history[i] == key {
-                self.usage_history.remove(i);
-            } else {
-                i += 1;
-            }
-        }
+    println!("Removing least recently used");
+    if self.usage_history.is_empty() {
+        return;
     }
-
+    let key = self.usage_history.remove(0);
+    self.hashmap.remove(&key);
+    }
     fn mark_as_most_recently_used(&mut self, username: String) {
         let mut remove_index = None;
         for i in 0..self.usage_history.len() {
@@ -57,10 +52,6 @@ impl<V> Cache<V> {
         }
         self.usage_history.push(username);
     }
-
-    // Reading from the cache:
-    // if the username is in the cache, it must be marked as the most recently
-    // used.
     pub fn get_chat(&mut self, username: &str) -> Option<&mut V> {
         if self.hashmap.contains_key(username) {
             self.mark_as_most_recently_used(username.to_string());
