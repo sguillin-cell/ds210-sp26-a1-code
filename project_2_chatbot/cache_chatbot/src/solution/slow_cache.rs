@@ -43,7 +43,7 @@ impl<V> Cache<V> {
             }
         }
     }
-}
+
     fn mark_as_most_recently_used(&mut self, username: String) {
         let mut remove_index = None;
         for i in 0..self.usage_history.len() {
