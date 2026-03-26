@@ -16,10 +16,16 @@ pub fn group_by_dataset(dataset: Dataset, group_by_column: &String) -> HashMap<V
         let key = row.get_value(col_index).clone();
         if !map.contains_key(&key) {
             map.insert(key.clone(), Dataset::new(columns.clone()));
+            }
+        match map.get_mut(&key) {
+            Some(group_dataset) => {
+            group_dataset.add_row(row);
+            }
+            None => {
+            panic!("Not found in map: {:?}", key);
+            }
         }
-        map.get_mut(&key).unwrap().add_row(row);
     }
-
     return map
 }
 
