@@ -66,7 +66,7 @@ pub fn aggregate_dataset(dataset: HashMap<Value, Dataset>, aggregation: &Aggrega
                         _ => panic!("average can only be used on integers sorry!"),
                     }
                 }
-                let avg = sum / count.max(1);
+                let avg = if count == 0 { 0 } else { sum / count };
                 Value::Integer(avg)
             }
         };
