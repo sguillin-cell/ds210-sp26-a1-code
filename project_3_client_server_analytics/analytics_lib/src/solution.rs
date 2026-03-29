@@ -35,6 +35,19 @@ pub fn group_by_dataset(dataset: Dataset, group_by_column: &String) -> HashMap<V
     todo!("Implement this!");
 }
 
+fn sum_column(dataset: &Dataset, column_name: &String) -> i32 {
+    let i = dataset.column_index(column_name);
+    let mut sum = 0;
+    for row in dataset.iter() {
+        match row.get_value(i) {
+            Value::Integer(val) => sum += val,
+            _ => panic!("columns must be integers to sum sorry!"),
+        }
+    }
+
+    return sum
+}
+
 pub fn aggregate_dataset(dataset: HashMap<Value, Dataset>, aggregation: &Aggregation) -> HashMap<Value, Value> {
     let mut result = HashMap::new();
     for (group_val, group_dataset) in dataset {
@@ -43,29 +56,11 @@ pub fn aggregate_dataset(dataset: HashMap<Value, Dataset>, aggregation: &Aggrega
                 Value::Integer(group_dataset.len() as i32)
             }
             Aggregation::Sum(column_name) => {
-                let i = group_dataset.column_index(column_name);
-                let mut sum = 0;
-                for row in group_dataset.iter() {
-                    match row.get_value(i) {
-                        Value::Integer(val) => sum += val,
-                        _ => panic!("sum can only be used on integers sorry!")
-                    }
-                }
-                Value::Integer(sum)
+                Value::Integer(sum_column(&group_dataset, column_name))
             }
             Aggregation::Average(column_name) => {
-                let i = group_dataset.column_index(column_name);
-                let mut sum = 0;
-                let mut count = 0;
-                for row in group_dataset.iter() {
-                    match row.get_value(i) {
-                        Value::Integer(val) => {
-                            sum += val;
-                            count += 1;
-                        }
-                        _ => panic!("average can only be used on integers sorry!"),
-                    }
-                }
+                let sum = sum_column(&group_dataset, column_name);
+                let count = group_dataset.len() as i32;
                 let avg = if count == 0 { 0 } else { sum / count };
                 Value::Integer(avg)
             }
