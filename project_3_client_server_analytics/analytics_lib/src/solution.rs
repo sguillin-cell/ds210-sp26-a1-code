@@ -4,7 +4,7 @@ use crate::query::{Aggregation, Condition, Query};
 
 
     pub fn filter_dataset(dataset: &Dataset, filter: &Condition) -> Dataset {
-        let mut result = Dataset::new(dataset.columns().clone());
+        let mut result = Dataset::new(dataset.columns().clone()); //Create a new dataset and we decided to use a clone in case people want to reutilize the virtual view
         for row in dataset.iter() {
             if check_condition(row, dataset, filter) {
                 result.add_row(row.clone());
