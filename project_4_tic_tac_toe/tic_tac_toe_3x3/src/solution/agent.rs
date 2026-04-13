@@ -74,7 +74,10 @@ impl Agent for SolutionAgent {
         };
         for m in moves {
             board.apply_move(m, player);
-            let score = SolutionAgent::minimax(board, SolutionAgent::opponent(player), false, _time_limit);
+            let score = SolutionAgent::minimax(board, 
+                SolutionAgent::opponent(player), 
+                SolutionAgent::opponent(player) == Player::X,
+                _time_limit);
             board.undo_move(m, player);
             match player {
                 Player::X => {
