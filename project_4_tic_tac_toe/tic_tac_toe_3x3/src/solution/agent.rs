@@ -1,3 +1,5 @@
+use std::i32;
+
 use tic_tac_toe_stencil::agents::Agent;
 use tic_tac_toe_stencil::board::Board;
 use tic_tac_toe_stencil::player::Player;
@@ -30,6 +32,7 @@ impl SolutionAgent {
                     board,
                     Self::opponent(player),
                     false,
+                    _time_limit,
                 );
 
                 board.undo_move(m, player);
@@ -48,6 +51,7 @@ impl SolutionAgent {
                     board,
                     Self::opponent(player),
                     true,
+                    _time_limit,
                 );
 
                 board.undo_move(m, player);
@@ -62,39 +66,32 @@ impl SolutionAgent {
 
 impl Agent for SolutionAgent {
     fn solve(board: &mut Board, player: Player, _time_limit: u64) -> (i32, usize, usize) {
-        let mut best_score = if player == Player::X {
-            i32::MIN
-        } else {
-            i32::MAX
+        let moves = board.moves();
+        let mut best_move = moves[0];
+        let mut best_score = match player {
+            Player::X => i32::MIN,
+            Player::O => i32::MAX,
         };
-
-        let mut best_move = (0, 0);
-
-        for m in board.moves() {
+        for m in moves {
             board.apply_move(m, player);
-
-            let score = SolutionAgent::minimax(
-                board,
-                SolutionAgent::opponent(player),
-                player == Player::O,
-            );
-
+            let score = SolutionAgent::minimax(board, SolutionAgent::opponent(player), false, _time_limit);
             board.undo_move(m, player);
-
-            if player == Player::X {
-                if score > best_score {
-                    best_score = score;
-                    best_move = m;
+            match player {
+                Player::X => {
+                    if score > best_score {
+                        best_score = score;
+                        best_move = m;
+                    }
                 }
-            } else {
-                if score < best_score {
-                    best_score = score;
-                    best_move = m;
+                Player::O => {
+                    if score < best_score {
+                        best_score = score;
+                        best_move = m;
+                    }
                 }
             }
         }
-
-        (best_score, best_move.0, best_move.1)
+        return (best_score, best_move.0, best_move.1);
     }
 }
 
