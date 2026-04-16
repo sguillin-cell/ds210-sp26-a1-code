@@ -9,7 +9,7 @@ use tic_tac_toe_5x5::solution::agent::SolutionAgent;
 mod args;
 
 // Time limit for solution to make a move
-const TIME_LIMIT: u64 = 2000;
+const TIME_LIMIT: u64 = 3000;
 
 fn main() {
     // Parse arguments.
