@@ -11,10 +11,6 @@ impl SolutionAgent {
             Player::O => Player::X,
         }
     }
-
-    // -----------------------------
-    // FAST WINDOW SCORING (STATIC)
-    // -----------------------------
     fn window_score(x: i32, o: i32) -> i32 {
         match (x, o) {
             (3, 0) => 120,
@@ -131,9 +127,6 @@ impl SolutionAgent {
         score
     }
 
-    // -----------------------------
-    // MINIMAX (ALPHA-BETA ONLY)
-    // -----------------------------
     fn minimax(
         board: &mut Board,
         player: Player,
@@ -182,10 +175,6 @@ impl SolutionAgent {
 
         best
     }
-
-    // -----------------------------
-    // MOVE HEURISTIC (KEY FIX FOR 3x3)
-    // -----------------------------
     fn move_heuristic(board: &mut Board, player: Player, m: (usize, usize)) -> i32 {
         board.apply_move(m, player);
 
@@ -196,9 +185,6 @@ impl SolutionAgent {
         score
     }
 
-    // -----------------------------
-    // ROOT SOLVER
-    // -----------------------------
     fn solve_internal(board: &mut Board, player: Player) -> (i32, usize, usize) {
         let moves = board.moves();
 
