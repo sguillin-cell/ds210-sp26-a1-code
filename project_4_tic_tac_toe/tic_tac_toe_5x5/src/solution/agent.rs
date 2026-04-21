@@ -199,7 +199,6 @@ impl SolutionAgent {
         let depth = 4;
 
         for m in moves {
-            // 🔥 immediate impact (fixes 3x3 weakness)
             let move_score = Self::move_heuristic(board, player, m);
 
             board.apply_move(m, player);
