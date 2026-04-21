@@ -11,120 +11,58 @@ impl SolutionAgent {
             Player::O => Player::X,
         }
     }
-    fn window_score(x: i32, o: i32) -> i32 {
-        match (x, o) {
-            (3, 0) => 120,
-            (0, 3) => -120,
 
-            (2, 0) => 35,
-            (0, 2) => -35,
+    fn evaluate_line(a: &Cell, b: &Cell, c: &Cell) -> i32 {
+        let mut x_count = 0;
+        let mut o_count = 0;
 
-            (1, 0) => 10,
-            (0, 1) => -10,
+        for cell in [a, b, c] {
+            match cell {
+                Cell::X => x_count += 1,
+                Cell::O => o_count += 1,
+                Cell::Wall => return 0,
+                _ => {}
+            }
+        }
 
+        if x_count > 0 && o_count > 0 {
+            return 0;
+        }
+
+        match (x_count, o_count) {
+            (3, 0) => 100,
+            (2, 0) => 10,
+            (1, 0) => 1,
+            (0, 3) => -100,
+            (0, 2) => -10,
+            (0, 1) => -1,
             _ => 0,
         }
     }
 
-    fn evaluate(board: &Board, _player: Player) -> i32 {
-        let b = board.get_cells();
-        let n = b.len() as isize;
-
+    fn heuristic(board: &Board) -> i32 {
+        let cells = board.get_cells();
+        let n = cells.len();
         let mut score = 0;
 
         for i in 0..n {
             for j in 0..n {
-                // horizontal
                 if j + 2 < n {
-                    let mut x = 0;
-                    let mut o = 0;
-
-                    for k in 0..3 {
-                        match b[i as usize][(j + k) as usize] {
-                            Cell::X => x += 1,
-                            Cell::O => o += 1,
-                            Cell::Empty => {}
-                            Cell::Wall => {
-                                x = -1;
-                                break;
-                            }
-                        }
-                    }
-
-                    if x >= 0 {
-                        score += Self::window_score(x, o);
-                    }
+                    score += Self::evaluate_line(&cells[i][j], &cells[i][j+1], &cells[i][j+2]);
                 }
-
-                // vertical
                 if i + 2 < n {
-                    let mut x = 0;
-                    let mut o = 0;
-
-                    for k in 0..3 {
-                        match b[(i + k) as usize][j as usize] {
-                            Cell::X => x += 1,
-                            Cell::O => o += 1,
-                            Cell::Empty => {}
-                            Cell::Wall => {
-                                x = -1;
-                                break;
-                            }
-                        }
-                    }
-
-                    if x >= 0 {
-                        score += Self::window_score(x, o);
-                    }
+                    score += Self::evaluate_line(&cells[i][j], &cells[i+1][j], &cells[i+2][j]);
                 }
-
-                // diag ↘
                 if i + 2 < n && j + 2 < n {
-                    let mut x = 0;
-                    let mut o = 0;
-
-                    for k in 0..3 {
-                        match b[(i + k) as usize][(j + k) as usize] {
-                            Cell::X => x += 1,
-                            Cell::O => o += 1,
-                            Cell::Empty => {}
-                            Cell::Wall => {
-                                x = -1;
-                                break;
-                            }
-                        }
-                    }
-
-                    if x >= 0 {
-                        score += Self::window_score(x, o);
-                    }
+                    score += Self::evaluate_line(&cells[i][j], &cells[i+1][j+1], &cells[i+2][j+2]);
                 }
-
-                // diag ↙
                 if i + 2 < n && j >= 2 {
-                    let mut x = 0;
-                    let mut o = 0;
-
-                    for k in 0..3 {
-                        match b[(i + k) as usize][(j - k) as usize] {
-                            Cell::X => x += 1,
-                            Cell::O => o += 1,
-                            Cell::Empty => {}
-                            Cell::Wall => {
-                                x = -1;
-                                break;
-                            }
-                        }
-                    }
-
-                    if x >= 0 {
-                        score += Self::window_score(x, o);
-                    }
+                    score += Self::evaluate_line(&cells[i][j], &cells[i+1][j-1], &cells[i+2][j-2]);
                 }
             }
         }
 
-        score
+        return score;
     }
 
     fn minimax(
@@ -135,13 +73,17 @@ impl SolutionAgent {
         mut beta: i32,
         maximizing: bool,
     ) -> i32 {
+        if board.game_over() {
+            return board.score() * 10000;
+        }
+
         if depth == 0 {
-            return Self::evaluate(board, player);
+            return Self::heuristic(board);
         }
 
         let moves = board.moves();
         if moves.is_empty() {
-            return Self::evaluate(board, player);
+            return Self::heuristic(board);
         }
 
         let mut best = if maximizing { i32::MIN } else { i32::MAX };
@@ -173,68 +115,55 @@ impl SolutionAgent {
             }
         }
 
-        best
+        return best;
     }
-    fn move_heuristic(board: &mut Board, player: Player, m: (usize, usize)) -> i32 {
-        board.apply_move(m, player);
+} 
 
-        let score = Self::evaluate(board, player);
-
-        board.undo_move(m, player);
-
-        score
-    }
-
-    fn solve_internal(board: &mut Board, player: Player) -> (i32, usize, usize) {
+impl Agent for SolutionAgent {
+    fn solve(board: &mut Board, player: Player, _time_limit: u64) -> (i32, usize, usize) {
         let moves = board.moves();
 
         let mut best_move = moves[0];
-
         let mut best_score = if player == Player::X {
             i32::MIN
         } else {
             i32::MAX
         };
 
-        let depth = 4;
+        let max_depth = 4;
 
         for m in moves {
-            let move_score = Self::move_heuristic(board, player, m);
-
             board.apply_move(m, player);
 
-            let search_score = Self::minimax(
+            let next = SolutionAgent::opponent(player);
+
+            let score = SolutionAgent::minimax(
                 board,
-                Self::opponent(player),
-                depth,
+                next,
+                max_depth - 1,
                 i32::MIN,
                 i32::MAX,
-                player == Player::X,
+                next == Player::X,
             );
 
             board.undo_move(m, player);
 
-            let total = move_score * 3 + search_score;
-
-            if player == Player::X {
-                if total > best_score {
-                    best_score = total;
-                    best_move = m;
+            match player {
+                Player::X => {
+                    if score > best_score {
+                        best_score = score;
+                        best_move = m;
+                    }
                 }
-            } else {
-                if total < best_score {
-                    best_score = total;
-                    best_move = m;
+                Player::O => {
+                    if score < best_score {
+                        best_score = score;
+                        best_move = m;
+                    }
                 }
             }
         }
 
-        (best_score, best_move.0, best_move.1)
-    }
-}
-
-impl Agent for SolutionAgent {
-    fn solve(board: &mut Board, player: Player, _time_limit: u64) -> (i32, usize, usize) {
-        Self::solve_internal(board, player)
+        return (best_score, best_move.0, best_move.1);
     }
 }
