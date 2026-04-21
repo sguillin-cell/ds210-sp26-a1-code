@@ -12,20 +12,30 @@ impl SolutionAgent {
         }
     }
 
-    // -----------------------------
-    // FAST WINDOW SCORING (STATIC)
-    // -----------------------------
-    fn window_score(x: i32, o: i32) -> i32 {
-        match (x, o) {
-            (3, 0) => 120,
-            (0, 3) => -120,
+    fn evaluate_line(a: &Cell, b: &Cell, c: &Cell) -> i32 {
+        let mut x_count = 0;
+        let mut o_count = 0;
 
-            (2, 0) => 35,
-            (0, 2) => -35,
+        for cell in [a, b, c] {
+            match cell {
+                Cell::X => x_count += 1,
+                Cell::O => o_count += 1,
+                Cell::Wall => return 0,
+                _ => {}
+            }
+        }
 
-            (1, 0) => 10,
-            (0, 1) => -10,
+        if x_count > 0 && o_count > 0 {
+            return 0;
+        }
 
+        match (x_count, o_count) {
+            (3, 0) => 100,
+            (2, 0) => 10,
+            (1, 0) => 1,
+            (0, 3) => -100,
+            (0, 2) => -10,
+            (0, 1) => -1,
             _ => 0,
         }
     }
@@ -47,34 +57,14 @@ impl SolutionAgent {
                     score += Self::evaluate_line(&cells[i][j], &cells[i+1][j+1], &cells[i+2][j+2]);
                 }
                 if i + 2 < n && j >= 2 {
-                    let mut x = 0;
-                    let mut o = 0;
-
-                    for k in 0..3 {
-                        match b[(i + k) as usize][(j - k) as usize] {
-                            Cell::X => x += 1,
-                            Cell::O => o += 1,
-                            Cell::Empty => {}
-                            Cell::Wall => {
-                                x = -1;
-                                break;
-                            }
-                        }
-                    }
-
-                    if x >= 0 {
-                        score += Self::window_score(x, o);
-                    }
+                    score += Self::evaluate_line(&cells[i][j], &cells[i+1][j-1], &cells[i+2][j-2]);
                 }
             }
         }
 
-        score
+        return score;
     }
 
-    // -----------------------------
-    // MINIMAX (ALPHA-BETA ONLY)
-    // -----------------------------
     fn minimax(
         board: &mut Board,
         player: Player,
@@ -125,26 +115,12 @@ impl SolutionAgent {
             }
         }
 
-        best
+        return best;
     }
+} 
 
-    // -----------------------------
-    // MOVE HEURISTIC (KEY FIX FOR 3x3)
-    // -----------------------------
-    fn move_heuristic(board: &mut Board, player: Player, m: (usize, usize)) -> i32 {
-        board.apply_move(m, player);
-
-        let score = Self::evaluate(board, player);
-
-        board.undo_move(m, player);
-
-        score
-    }
-
-    // -----------------------------
-    // ROOT SOLVER
-    // -----------------------------
-    fn solve_internal(board: &mut Board, player: Player) -> (i32, usize, usize) {
+impl Agent for SolutionAgent {
+    fn solve(board: &mut Board, player: Player, _time_limit: u64) -> (i32, usize, usize) {
         let moves = board.moves();
 
         let mut best_move = moves[0];
@@ -157,9 +133,6 @@ impl SolutionAgent {
         let max_depth = 4;
 
         for m in moves {
-            // 🔥 immediate impact (fixes 3x3 weakness)
-            let move_score = Self::move_heuristic(board, player, m);
-
             board.apply_move(m, player);
 
             let next = SolutionAgent::opponent(player);
