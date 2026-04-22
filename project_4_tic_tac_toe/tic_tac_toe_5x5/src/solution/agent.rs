@@ -26,11 +26,13 @@ impl SolutionAgent {
         }
     }
 
-    fn evaluate(board: &Board, _player: Player) -> i32 {
+    fn evaluate(board: &Board) -> i32 {
         let b = board.get_cells();
         let n = b.len() as isize;
 
-        let mut score = 0;
+        // Real game objective: maximize board.score() for X, minimize for O.
+        // board.score() already counts overlapping triples, so XXXX contributes 2.
+        let mut score = board.score() * 1000;
 
         for i in 0..n {
             for j in 0..n {
@@ -127,66 +129,120 @@ impl SolutionAgent {
         score
     }
 
-    fn minimax(
-        board: &mut Board,
-        player: Player,
-        depth: i32,
-        mut alpha: i32,
-        mut beta: i32,
-        maximizing: bool,
-    ) -> i32 {
-        if depth == 0 {
-            return Self::evaluate(board, player);
-        }
-
+    fn best_immediate_swing(board: &mut Board, player: Player) -> i32 {
+        let current = board.score();
+        let mut best = if player == Player::X { i32::MIN } else { i32::MAX };
         let moves = board.moves();
-        if moves.is_empty() {
-            return Self::evaluate(board, player);
-        }
 
-        let mut best = if maximizing { i32::MIN } else { i32::MAX };
+        if moves.is_empty() {
+            return 0;
+        }
 
         for m in moves {
             board.apply_move(m, player);
-
-            let val = Self::minimax(
-                board,
-                Self::opponent(player),
-                depth - 1,
-                alpha,
-                beta,
-                !maximizing,
-            );
-
+            let swing = board.score() - current;
             board.undo_move(m, player);
 
-            if maximizing {
-                best = best.max(val);
-                alpha = alpha.max(best);
+            if player == Player::X {
+                best = best.max(swing);
             } else {
-                best = best.min(val);
-                beta = beta.min(best);
-            }
-
-            if beta <= alpha {
-                break;
+                best = best.min(swing);
             }
         }
 
         best
     }
-    fn move_heuristic(board: &mut Board, player: Player, m: (usize, usize)) -> i32 {
-        board.apply_move(m, player);
 
-        let score = Self::evaluate(board, player);
+    fn ordered_moves(board: &mut Board, player: Player) -> Vec<(usize, usize)> {
+        let base_score = board.score();
+        let mut scored_moves: Vec<(i32, (usize, usize))> = Vec::new();
 
-        board.undo_move(m, player);
+        for m in board.moves() {
+            board.apply_move(m, player);
+            let delta = board.score() - base_score;
+            board.undo_move(m, player);
+            scored_moves.push((delta, m));
+        }
+
+        if player == Player::X {
+            scored_moves.sort_by(|a, b| b.0.cmp(&a.0));
+        } else {
+            scored_moves.sort_by(|a, b| a.0.cmp(&b.0));
+        }
+
+        scored_moves.into_iter().map(|(_, m)| m).collect()
+    }
+
+    fn minimax(board: &mut Board, player: Player, depth: i32, mut alpha: i32, mut beta: i32) -> i32 {
+        if depth == 0 {
+            return Self::evaluate(board);
+        }
+
+        let moves = Self::ordered_moves(board, player);
+        if moves.is_empty() {
+            return Self::evaluate(board);
+        }
+
+        if player == Player::X {
+            let mut best = i32::MIN;
+            for m in moves {
+                board.apply_move(m, player);
+                let val = Self::minimax(board, Self::opponent(player), depth - 1, alpha, beta);
+                board.undo_move(m, player);
+
+                best = best.max(val);
+                alpha = alpha.max(best);
+                if beta <= alpha {
+                    break;
+                }
+            }
+            best
+        } else {
+            let mut best = i32::MAX;
+            for m in moves {
+                board.apply_move(m, player);
+                let val = Self::minimax(board, Self::opponent(player), depth - 1, alpha, beta);
+                board.undo_move(m, player);
+
+                best = best.min(val);
+                beta = beta.min(best);
+                if beta <= alpha {
+                    break;
+                }
+            }
+            best
+        }
+    }
+    fn move_heuristic(
+        board: &mut Board,
+        player: Player,
+        base_score: i32,
+        opp_best_reply_swing: i32,
+    ) -> i32 {
+        let mut score = Self::evaluate(board);
+        let delta = board.score() - base_score;
+        let own_best_swing = Self::best_immediate_swing(board, player);
+
+        // Keep heuristic centered on real score swing first.
+        score += delta * 300;
+
+        // Tactical one-ply pressure.
+        score += own_best_swing * 260;
+        score += opp_best_reply_swing * 220;
+
+        // As O, strongly avoid giving X immediate positive swings.
+        if player == Player::O {
+            if opp_best_reply_swing > 0 {
+                score += opp_best_reply_swing * 220;
+            }
+        }
 
         score
     }
 
     fn solve_internal(board: &mut Board, player: Player) -> (i32, usize, usize) {
-        let moves = board.moves();
+        let moves = Self::ordered_moves(board, player);
+        let base_score = board.score();
 
         let mut best_move = moves[0];
 
@@ -196,25 +252,31 @@ impl SolutionAgent {
             i32::MAX
         };
 
-        let depth = 4;
+        // Dynamic depth to stay within time limits as branching grows.
+        let depth = if player == Player::O {
+            if moves.len() > 14 { 3 } else { 4 }
+        } else if moves.len() > 16 {
+            2
+        } else {
+            3
+        };
+        let mut best_opp_reply_swing = i32::MAX;
+        let mut best_search_score = i32::MAX;
 
         for m in moves {
-            let move_score = Self::move_heuristic(board, player, m);
-
             board.apply_move(m, player);
 
-            let search_score = Self::minimax(
-                board,
-                Self::opponent(player),
-                depth,
-                i32::MIN,
-                i32::MAX,
-                player == Player::X,
-            );
+            let opp_reply_swing = Self::best_immediate_swing(board, Self::opponent(player));
+            let move_score = Self::move_heuristic(board, player, base_score, opp_reply_swing);
+            let search_score = Self::minimax(board, Self::opponent(player), depth, i32::MIN, i32::MAX);
 
             board.undo_move(m, player);
 
-            let total = move_score * 3 + search_score;
+            let total = if player == Player::O {
+                move_score * 4 + search_score
+            } else {
+                move_score + search_score
+            };
 
             if player == Player::X {
                 if total > best_score {
@@ -222,7 +284,19 @@ impl SolutionAgent {
                     best_move = m;
                 }
             } else {
-                if total < best_score {
+                // Safety-first for black:
+                // 1) minimize X's best immediate scoring swing
+                // 2) then minimize deeper minimax score
+                // 3) then use total heuristic as tie-breaker
+                let better = opp_reply_swing < best_opp_reply_swing
+                    || (opp_reply_swing == best_opp_reply_swing && search_score < best_search_score)
+                    || (opp_reply_swing == best_opp_reply_swing
+                        && search_score == best_search_score
+                        && total < best_score);
+
+                if better {
+                    best_opp_reply_swing = opp_reply_swing;
+                    best_search_score = search_score;
                     best_score = total;
                     best_move = m;
                 }
